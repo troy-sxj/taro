@@ -9,10 +9,10 @@
             maxlength="{{ maxlength }}"
             disabled="{{ disabled }}"
 
-            @change="changeCallback"
-            @focus="focusCallback"
-            @blur="blurCallback"
-            @enterkeyclick="enterkeyclickCallback"
+            @change="onInput"
+            @focus="onFocus"
+            @blur="onBlur"
+            @enterkeyclick="onEnterKeyClick"
             >
     </input>
 </div>

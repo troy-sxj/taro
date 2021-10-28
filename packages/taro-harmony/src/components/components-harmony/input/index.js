@@ -1,8 +1,11 @@
-// @see https://developer.harmonyos.com/cn/docs/documentation/doc-references/js-components-basic-input-0000000000611673
+import window from '@ohos.window'
 
 export default {
   data: {
-    inputValue: ''
+    inputValue: '',
+    type: 'keyboardHeightChange',
+    windowClass: null,
+    height: 0
   },
   props: {
     id: String,
@@ -28,35 +31,63 @@ export default {
   },
 
   computed: {
-    realType: {
-      get () {
-        let temp = this.type
-        if (this.password && this.password === 'true') {
-          temp = 'password'
-        }
-        return temp
+    realType () {
+      let temp = this.type
+      if (this.password && this.password === 'true') {
+        temp = 'password'
       }
+      return temp
     }
   },
 
-  changeCallback: function (e) {
+  onInit () {
+    this.windowClass = window.getTopWindow()
+    this.windowClass.then(win => {
+      win.on('keyboardHeightChange', (err, data) => {
+        if (!err) {
+          if (this.height !== data.height) {
+            this.onKeyboardHeightChange(data.height)
+          }
+          this.height = data.height
+        }
+      })
+    })
+  },
+
+  onInput (e) {
     this.inputValue = e.value
-    this.$emit('input', { id: this.id, value: e.value, cursor: null, keyCode: null })
+    this.$emit('input', {
+      id: this.id, value: e.value, cursor: this.inputValue.length, keyCode: null
+    })
   },
 
-  focusCallback: function () {
-    let temp = ''
-    if (this.inputValue) {
-      temp = this.inputValue
+  onFocus () {
+    this.$emit('focus', {
+      id: this.id, value: this.inputValue, height: this.height
+    })
+  },
+
+  onBlur () {
+    this.$emit('blur', {
+      id: this.id, value: this.inputValue
+    })
+  },
+
+  onEnterKeyClick () {
+    this.$emit('confirm', {
+      id: this.id, value: this.inputValue
+    })
+  },
+
+  onKeyboardHeightChange (height) {
+    this.$emit('keyboardheightchange', {
+      id: this.id, height: height, duration: 0
+    })
+  },
+
+  onDestroy () {
+    if (this.windowClass) {
+      this.windowClass.off(this.type)
     }
-    this.$emit('focus', { id: this.id, value: temp })
-  },
-
-  blurCallback: function () {
-    this.$emit('blur', { id: this.id, value: this.inputValue })
-  },
-
-  enterkeyclickCallback: function (e) {
-    this.$emit('confirm', { id: this.id, value: this.inputValue, enterKey: e.value })
   }
 }
