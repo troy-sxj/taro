@@ -1,0 +1,8 @@
+<div>
+    <canvas
+            id="{{ id }}"
+            style="height: {{height}}vp; width:{{width}}vp"
+            type="{{ type }}"
+            class="{{ cls }}"
+            ></canvas>
+</div>
