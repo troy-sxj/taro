@@ -1,0 +1,7 @@
+<div
+        id="{{ id }}"
+        class="{{ clsType }}"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd">
+    <slot></slot>
+</div>

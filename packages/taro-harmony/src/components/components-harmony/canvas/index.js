@@ -3,8 +3,12 @@ export default {
     id: String,
     canvasId: String,
     cls: String,
-    width: 300,
-    height: 150,
+    height: {
+      default: 150
+    },
+    width: {
+      default: 300
+    },
     type: {
       default: '2d',
       validator: function (value) {

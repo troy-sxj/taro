@@ -11,30 +11,94 @@ interface ISelectorQueryQueue {
 
 type TSelectorQueryQueueCallback = (res: ISelectorQueryQueue) => void
 
-const parseHandler = {
-  '#': function (element, argument) { // id selector
-    return element.$element(argument)
+let arr: any = []
+
+function traversalDFSDom (rootDom) {
+  if (!rootDom) return
+  if (rootDom.children.length === 0) {
+    arr.push(rootDom)
+    return
   }
+  arr.push(rootDom)
+  for (let i = 0; i < rootDom.pureChildren.length; i++) {
+    traversalDFSDom(rootDom.pureChildren[i])
+  }
+}
+
+function parseHandler (element, selector, selectAll) {
+  const domList:any = []
+  arr = []
+  traversalDFSDom(element)
+  if (arr.length === 0) return null
+
+  let selectedId, clsList
+  switch (selector.charAt(0)) {
+    case '#': // id selector
+      selectedId = selector.substring(1)
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i].id === selectedId) {
+          domList.push(arr[i])
+          if (!selectAll) {
+            break
+          }
+        }
+      }
+      break
+    case '.':
+      clsList = selector.split('.').filter((item) => item !== '')
+      if (clsList.length === 0) break
+
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < clsList.length; j++) {
+          if (arr[i].classList.indexOf(clsList[j]) > -1) {
+            domList.push(arr[i])
+            if (!selectAll) {
+              break
+            }
+          }
+        }
+      }
+      break
+    default:
+      console.warn('unSupport selector')
+      break
+  }
+  if (selectAll) {
+    return domList
+  } else if (domList.length > 0) {
+    return domList[0]
+  }
+  return null
 }
 
 function filter (fields, dom, selector) {
   if (!dom) return null
   const isViewport = selector === '.taro_page'
-  const { id, dataset, rect, size, scrollOffset, properties = [], computedStyle = [], nodeCanvasType, node, context } = fields
-  const res:any = {}
+  const {
+    id,
+    dataset,
+    rect,
+    size,
+    scrollOffset,
+    properties = [],
+    computedStyle = [],
+    nodeCanvasType,
+    node,
+    context
+  } = fields
+  const res: any = {}
 
   if (nodeCanvasType && node) { // Node节点获取处理
-    const tagName = dom.tagName
+    const typeName = dom.type
     res.node = {
       id: dom.id,
       $taroElement: dom
     }
-    if (/^taro-canvas-core/i.test(tagName)) {
-      const type = dom.type || ''
-      res.nodeCanvasType = type
-      const canvas = dom.getElementsByTagName('canvas')[0]
-      if (/^(2d|webgl)/i.test(type) && canvas) {
-        res.node = canvas
+    if (/^canvas/i.test(typeName)) {
+      const canvasType = dom.attr.type || ''
+      res.nodeCanvasType = canvasType
+      if (/^(2d|webgl)/i.test(canvasType) && dom) {
+        res.node = dom
       } else {
         res.node = null
       }
@@ -111,32 +175,25 @@ function filter (fields, dom, selector) {
   return res
 }
 
-// function querySelectorAll (selector, element) {
-//   const res = []
-//
-//   return res
-// }
-
-function querySelector (selector, element) {
+function querySelector (selector, element, selectAll) {
   if (element == null) return null
   if (typeof selector === 'string') {
-    return parseHandler[selector.charAt(0)](element, selector.substring(1))
+    return parseHandler(element, selector, selectAll)
   }
   return null
 }
 
 function queryBat (queue, cb) {
-  const result:any = []
+  const result: any = []
   const taro = current.taro
   const page = taro.getCurrentInstance().page
   queue.forEach(item => {
     const { selector, single, fields, component } = item
-    const container = component !== null ? component : page.$rootElement()
+    const container = typeof (component) !== 'undefined' ? component : page.$rootElement()
 
     let selectSelf = false
     if (container !== page.$rootElement()) {
-      // const $nodeList = querySelectorAll(selector, container.parentNode)
-      const $nodeList = querySelector(selector, container.parentNode)
+      const $nodeList = querySelector(selector, component.parentNode, true)
       if ($nodeList) {
         for (let i = 0, len = $nodeList.length; i < len; i++) {
           if (container === $nodeList[i]) {
@@ -148,12 +205,11 @@ function queryBat (queue, cb) {
     }
 
     if (single) {
-      const el = selectSelf ? container : querySelector(selector, container)
+      const el = selectSelf ? container : querySelector(selector, container, false)
       result.push(filter(fields, el, selector))
     } else {
-      // const $children = querySelectorAll(selector, container)
-      const $children = querySelector(selector, container)
-      const children:any = []
+      const $children = querySelector(selector, container, true)
+      const children: any = []
       selectSelf && children.push(container)
       for (let i = 0, len = $children.length; i < len; i++) {
         children.push($children[i])
