@@ -26,6 +26,7 @@ export class Template extends RecursiveTemplate {
     'web-view',
     'picker',
     'checkbox',
+    'rich-text',
     'canvas'
   ]
 
